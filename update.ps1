@@ -36,13 +36,26 @@ try {
     Pop-Location
 }
 
-# Stop any existing node processes on port 3002
-$existing = Get-Process node -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "*node.exe" }
-if ($existing) {
-    $existing | Stop-Process -Force
+# Stop any existing node processes on port 3002 only
+Write-Host "Checking for existing processes on port 3002..."
+$port3002Processes = netstat -ano | findstr ":3002" | findstr "LISTENING"
+if ($port3002Processes) {
+    $port3002Processes | ForEach-Object {
+        $parts = $_ -split '\s+'
+        $pid = $parts[-1]
+        if ($pid -and $pid -ne "0") {
+            $process = Get-Process -Id $pid -ErrorAction SilentlyContinue
+            if ($process -and $process.ProcessName -eq "node") {
+                Write-Host "Stopping Node.js process on port 3002 (PID: $pid)..."
+                Stop-Process -Id $pid -Force
+                Start-Sleep -Seconds 1
+            }
+        }
+    }
 }
 
 # Start the Node.js server in the background
+Write-Host "Starting Node.js server on port 3002..."
 Start-Process "node" "src/app.js" -WorkingDirectory "C:\PortfolioNoteGenerator"
 Write-Host "Node.js server started."
 
