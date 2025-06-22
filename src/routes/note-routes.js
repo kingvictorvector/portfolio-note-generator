@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { parseAssets, generateFinalNote, parseTimePeriod, parsePerformanceByPosition, loadTemplate, saveTemplate, getAvailableVariables } = require('../utils/noteGenerator');
+const { parseAssets, generateFinalNote, parseTimePeriod, parsePerformanceByPosition, loadTemplate, saveTemplate, getAvailableVariables, loadQuickTemplates, saveQuickTemplates } = require('../utils/noteGenerator');
 
 // This new route handles the "Parse and Verify" step.
 router.post('/parse-data', (req, res) => {
@@ -47,10 +47,12 @@ router.post('/generate-note', (req, res) => {
 router.get('/templates', (req, res) => {
     const currentTemplate = loadTemplate();
     const availableVariables = getAvailableVariables();
+    const quickTemplates = loadQuickTemplates();
     
     res.render('templates', {
         currentTemplate,
-        availableVariables
+        availableVariables,
+        quickTemplates
     });
 });
 
@@ -72,6 +74,54 @@ router.post('/api/template', (req, res) => {
         }
     } catch (error) {
         console.error('Error saving template:', error);
+        res.json({ success: false, error: 'Internal server error' });
+    }
+});
+
+// API route to save as quick template
+router.post('/api/quick-template', (req, res) => {
+    try {
+        const { templateName, templateContent, templateKey } = req.body;
+        
+        if (!templateName || !templateContent || templateContent.trim() === '') {
+            return res.json({ success: false, error: 'Template name and content are required' });
+        }
+        
+        const quickTemplates = loadQuickTemplates();
+        const key = templateKey || `custom_${Date.now()}`;
+        
+        quickTemplates[key] = {
+            name: templateName,
+            content: templateContent
+        };
+        
+        const success = saveQuickTemplates(quickTemplates);
+        
+        if (success) {
+            res.json({ success: true, key });
+        } else {
+            res.json({ success: false, error: 'Failed to save quick template' });
+        }
+    } catch (error) {
+        console.error('Error saving quick template:', error);
+        res.json({ success: false, error: 'Internal server error' });
+    }
+});
+
+// API route to get quick template
+router.get('/api/quick-template/:key', (req, res) => {
+    try {
+        const { key } = req.params;
+        const quickTemplates = loadQuickTemplates();
+        const template = quickTemplates[key];
+        
+        if (template) {
+            res.json({ success: true, template });
+        } else {
+            res.json({ success: false, error: 'Template not found' });
+        }
+    } catch (error) {
+        console.error('Error loading quick template:', error);
         res.json({ success: false, error: 'Internal server error' });
     }
 });

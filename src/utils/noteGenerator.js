@@ -49,6 +49,7 @@ const fs = require('fs');
 const path = require('path');
 
 const TEMPLATE_FILE = path.join(__dirname, '../data/template.txt');
+const QUICK_TEMPLATES_FILE = path.join(__dirname, '../data/quick-templates.json');
 
 // Ensure data directory exists
 function ensureDataDir() {
@@ -112,7 +113,9 @@ function getAvailableVariables() {
             'nonUsStockPercentage': 'Non US Stock %',
             'cashPercentage': 'Cash %',
             'bondPercentage': 'Bond %',
-            'otherPercentage': 'Other %'
+            'otherPercentage': 'Other %',
+            'totalEquityPercentage': 'Total Equity % (US + Non-US Stock)',
+            'totalFixedIncomePercentage': 'Total Fixed Income % (Cash + Bond)'
         },
         'Trailing Year Performance': {
             'trailingYearReturn': 'Time Weighted Return %',
@@ -129,6 +132,15 @@ function getAvailableVariables() {
 function processTemplate(templateText, data) {
     let processedText = templateText;
     
+    // Calculate derived values
+    const usStock = parseFloat(data.assetAllocation['US Stock']) || 0;
+    const nonUsStock = parseFloat(data.assetAllocation['Non US Stock']) || 0;
+    const cash = parseFloat(data.assetAllocation['Cash']) || 0;
+    const bond = parseFloat(data.assetAllocation['Bond']) || 0;
+    
+    const totalEquity = (usStock + nonUsStock).toFixed(1);
+    const totalFixedIncome = (cash + bond).toFixed(1);
+    
     // Replace variables with actual data
     const replacements = {
         '{{clientName}}': data.clientName || '',
@@ -138,6 +150,8 @@ function processTemplate(templateText, data) {
         '{{cashPercentage}}': data.assetAllocation['Cash'] || '',
         '{{bondPercentage}}': data.assetAllocation['Bond'] || '',
         '{{otherPercentage}}': data.assetAllocation['Other'] || '',
+        '{{totalEquityPercentage}}': totalEquity,
+        '{{totalFixedIncomePercentage}}': totalFixedIncome,
         '{{trailingYearReturn}}': data.trailingYear['Time Weighted Return %'] || '',
         '{{trailingYearBenchmark}}': data.trailingYear['Benchmark Return %'] || '',
         '{{ytdReturn}}': data.ytd['Time Weighted Return %'] || '',
@@ -178,6 +192,92 @@ function generateFinalNote(data) {
     return processTemplate(template, data);
 }
 
+// Load quick templates
+function loadQuickTemplates() {
+    ensureDataDir();
+    if (!fs.existsSync(QUICK_TEMPLATES_FILE)) {
+        // Return default quick templates if file doesn't exist
+        return {
+            'simple': {
+                name: 'Simple Summary',
+                content: `Portfolio review for {{clientName}} covering {{timePeriod}}.
+
+Asset Allocation:
+- US Stock: {{usStockPercentage}}%
+- Non US Stock: {{nonUsStockPercentage}}%
+- Cash: {{cashPercentage}}%
+- Bond: {{bondPercentage}}%
+- Other: {{otherPercentage}}%
+
+Performance Summary:
+- Trailing Year Return: {{trailingYearReturn}}%
+- YTD Return: {{ytdReturn}}%`
+            },
+            'detailed': {
+                name: 'Detailed Analysis',
+                content: `COMPREHENSIVE PORTFOLIO REVIEW
+Client: {{clientName}}
+Period: {{timePeriod}}
+
+ASSET ALLOCATION BREAKDOWN:
+• US Equities: {{usStockPercentage}}% of portfolio
+• International Equities: {{nonUsStockPercentage}}% of portfolio  
+• Fixed Income: {{bondPercentage}}% of portfolio
+• Cash & Equivalents: {{cashPercentage}}% of portfolio
+• Alternative Investments: {{otherPercentage}}% of portfolio
+
+PERFORMANCE ANALYSIS:
+Trailing Year Performance:
+• Portfolio Return: {{trailingYearReturn}}%
+• Benchmark Return: {{trailingYearBenchmark}}%
+
+Year-to-Date Performance:
+• Portfolio Return: {{ytdReturn}}%
+• Benchmark Return: {{ytdBenchmark}}%`
+            },
+            'performance': {
+                name: 'Performance Focus',
+                content: `PERFORMANCE SUMMARY - {{clientName}}
+Reporting Period: {{timePeriod}}
+
+KEY METRICS:
+Trailing Year:
+• Portfolio: {{trailingYearReturn}}%
+• Benchmark: {{trailingYearBenchmark}}%
+
+YTD:
+• Portfolio: {{ytdReturn}}%
+• Benchmark: {{ytdBenchmark}}%
+
+ASSET MIX:
+Equity: {{usStockPercentage}}% US + {{nonUsStockPercentage}}% International
+Fixed Income: {{bondPercentage}}%
+Cash: {{cashPercentage}}%
+Other: {{otherPercentage}}%`
+            }
+        };
+    }
+    try {
+        const data = fs.readFileSync(QUICK_TEMPLATES_FILE, 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        console.error('Error loading quick templates:', error);
+        return {};
+    }
+}
+
+// Save quick templates
+function saveQuickTemplates(templates) {
+    ensureDataDir();
+    try {
+        fs.writeFileSync(QUICK_TEMPLATES_FILE, JSON.stringify(templates, null, 2));
+        return true;
+    } catch (error) {
+        console.error('Error saving quick templates:', error);
+        return false;
+    }
+}
+
 module.exports = { 
     parseValue, 
     parseAssets, 
@@ -187,5 +287,7 @@ module.exports = {
     loadTemplate,
     saveTemplate,
     getAvailableVariables,
-    processTemplate
+    processTemplate,
+    loadQuickTemplates,
+    saveQuickTemplates
 }; 

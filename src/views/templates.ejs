@@ -97,9 +97,16 @@
                         <h5>Quick Templates</h5>
                     </div>
                     <div class="card-body">
-                        <button class="btn btn-outline-primary btn-sm mb-2" onclick="loadQuickTemplate('simple')">Simple Summary</button>
-                        <button class="btn btn-outline-primary btn-sm mb-2" onclick="loadQuickTemplate('detailed')">Detailed Analysis</button>
-                        <button class="btn btn-outline-primary btn-sm mb-2" onclick="loadQuickTemplate('performance')">Performance Focus</button>
+                        <% for (const [key, template] of Object.entries(quickTemplates)) { %>
+                            <button class="btn btn-outline-primary btn-sm mb-2" onclick="loadQuickTemplate('<%= key %>')"><%= template.name %></button>
+                        <% } %>
+                        
+                        <hr>
+                        <h6>Save Current Template</h6>
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control form-control-sm" id="saveTemplateName" placeholder="Template name">
+                            <button class="btn btn-outline-success btn-sm" onclick="saveAsQuickTemplate()">Save as Quick Template</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -121,67 +128,53 @@
             updatePreview();
         }
 
-        function loadQuickTemplate(type) {
-            const templates = {
-                simple: {
-                    content: `Portfolio review for {{clientName}} covering {{timePeriod}}.
+        function loadQuickTemplate(key) {
+            fetch(`/api/quick-template/${key}`)
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        document.getElementById('templateContent').value = result.template.content;
+                        updatePreview();
+                    } else {
+                        alert('Error loading template: ' + result.error);
+                    }
+                });
+        }
 
-Asset Allocation:
-- US Stock: {{usStockPercentage}}%
-- Non US Stock: {{nonUsStockPercentage}}%
-- Cash: {{cashPercentage}}%
-- Bond: {{bondPercentage}}%
-- Other: {{otherPercentage}}%
-
-Performance Summary:
-- Trailing Year Return: {{trailingYearReturn}}%
-- YTD Return: {{ytdReturn}}%`
+        function saveAsQuickTemplate() {
+            const templateName = document.getElementById('saveTemplateName').value.trim();
+            const templateContent = document.getElementById('templateContent').value.trim();
+            
+            if (!templateName) {
+                alert('Please enter a template name');
+                return;
+            }
+            
+            if (!templateContent) {
+                alert('Template content cannot be empty');
+                return;
+            }
+            
+            fetch('/api/quick-template', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
                 },
-                detailed: {
-                    content: `COMPREHENSIVE PORTFOLIO REVIEW
-Client: {{clientName}}
-Period: {{timePeriod}}
-
-ASSET ALLOCATION BREAKDOWN:
-• US Equities: {{usStockPercentage}}% of portfolio
-• International Equities: {{nonUsStockPercentage}}% of portfolio  
-• Fixed Income: {{bondPercentage}}% of portfolio
-• Cash & Equivalents: {{cashPercentage}}% of portfolio
-• Alternative Investments: {{otherPercentage}}% of portfolio
-
-PERFORMANCE ANALYSIS:
-Trailing Year Performance:
-• Portfolio Return: {{trailingYearReturn}}%
-• Benchmark Return: {{trailingYearBenchmark}}%
-
-Year-to-Date Performance:
-• Portfolio Return: {{ytdReturn}}%
-• Benchmark Return: {{ytdBenchmark}}%`
-                },
-                performance: {
-                    content: `PERFORMANCE SUMMARY - {{clientName}}
-Reporting Period: {{timePeriod}}
-
-KEY METRICS:
-Trailing Year:
-• Portfolio: {{trailingYearReturn}}%
-• Benchmark: {{trailingYearBenchmark}}%
-
-YTD:
-• Portfolio: {{ytdReturn}}%
-• Benchmark: {{ytdBenchmark}}%
-
-ASSET MIX:
-Equity: {{usStockPercentage}}% US + {{nonUsStockPercentage}}% International
-Fixed Income: {{bondPercentage}}%
-Cash: {{cashPercentage}}%
-Other: {{otherPercentage}}%`
+                body: JSON.stringify({
+                    templateName: templateName,
+                    templateContent: templateContent
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('Template saved successfully!');
+                    document.getElementById('saveTemplateName').value = '';
+                    location.reload(); // Reload to show the new template
+                } else {
+                    alert('Error saving template: ' + result.error);
                 }
-            };
-
-            const template = templates[type];
-            document.getElementById('templateContent').value = template.content;
-            updatePreview();
+            });
         }
 
         function resetToDefault() {
@@ -218,6 +211,8 @@ Performance Summary (YTD):
                 '{{cashPercentage}}': '12.0',
                 '{{bondPercentage}}': '15.0',
                 '{{otherPercentage}}': '2.0',
+                '{{totalEquityPercentage}}': '71.0',
+                '{{totalFixedIncomePercentage}}': '27.0',
                 '{{trailingYearReturn}}': '8.5',
                 '{{trailingYearBenchmark}}': '7.2',
                 '{{ytdReturn}}': '6.8',
