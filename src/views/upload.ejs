@@ -8,13 +8,34 @@
 <body>
     <div class="container mt-5">
         <h2>Upload Portfolio PDF</h2>
-        <form action="/upload" method="POST" enctype="multipart/form-data">
-            <div class="mb-3">
-                <label for="pdfFile" class="form-label">Select PDF file</label>
-                <input class="form-control" type="file" id="pdfFile" name="pdfFile" accept="application/pdf" required>
+        <p class="text-muted mb-4">Upload a portfolio PDF to generate standardized notes.</p>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Upload PDF</h5>
+                        <form action="/upload" method="POST" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label for="pdfFile" class="form-label">Select PDF file</label>
+                                <input class="form-control" type="file" id="pdfFile" name="pdfFile" accept="application/pdf" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Upload & Process</button>
+                        </form>
+                    </div>
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary">Upload</button>
-        </form>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Customize Template</h5>
+                        <p class="card-text">Create and edit your note template with variables for client data, performance metrics, and asset allocation.</p>
+                        <a href="/templates" class="btn btn-outline-primary">Edit Template</a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </body>
 </html> 

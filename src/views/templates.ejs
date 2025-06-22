@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Template Editor</title>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <style>
+        .template-editor {
+            min-height: 400px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .variable-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .variable-item {
+            cursor: pointer;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            margin: 3px 0;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            transition: background-color 0.2s;
+        }
+        .variable-item:hover {
+            background-color: #e9ecef;
+        }
+        .preview-section {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h2>Note Template Editor</h2>
+                <p>Customize your note template with variables. Click on variables to insert them into your template.</p>
+                <a href="/upload" class="btn btn-secondary mb-3">Back to Upload</a>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Template Editor -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Edit Template</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="templateForm">
+                            <div class="mb-3">
+                                <label for="templateContent" class="form-label">Template Content</label>
+                                <textarea class="form-control template-editor" id="templateContent" name="templateContent" rows="20" placeholder="Enter your template here. Use variables like {{clientName}}, {{usStockPercentage}}, etc."><%= currentTemplate %></textarea>
+                                <div class="form-text">Use double curly braces for variables: {{variableName}}</div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Template</button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="resetToDefault()">Reset to Default</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Preview Section -->
+                <div class="preview-section">
+                    <h6>Template Preview (with sample data)</h6>
+                    <div id="previewContent" style="white-space: pre-wrap; font-family: monospace; background: white; padding: 10px; border-radius: 3px;"></div>
+                </div>
+            </div>
+
+            <!-- Variable Reference -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Available Variables</h5>
+                    </div>
+                    <div class="card-body variable-list">
+                        <% for (const [category, variables] of Object.entries(availableVariables)) { %>
+                            <h6 class="mt-3"><%= category %></h6>
+                            <% for (const [variable, description] of Object.entries(variables)) { %>
+                                <div class="variable-item" onclick="insertVariable('{{<%= variable %>}}')">
+                                    <strong>{{<%= variable %>}}</strong><br>
+                                    <small><%= description %></small>
+                                </div>
+                            <% } %>
+                        <% } %>
+                    </div>
+                </div>
+
+                <!-- Quick Templates -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5>Quick Templates</h5>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-outline-primary btn-sm mb-2" onclick="loadQuickTemplate('simple')">Simple Summary</button>
+                        <button class="btn btn-outline-primary btn-sm mb-2" onclick="loadQuickTemplate('detailed')">Detailed Analysis</button>
+                        <button class="btn btn-outline-primary btn-sm mb-2" onclick="loadQuickTemplate('performance')">Performance Focus</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function insertVariable(variable) {
+            const textarea = document.getElementById('templateContent');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = textarea.value;
+            
+            textarea.value = text.substring(0, start) + variable + text.substring(end);
+            textarea.focus();
+            textarea.setSelectionRange(start + variable.length, start + variable.length);
+            
+            // Update preview
+            updatePreview();
+        }
+
+        function loadQuickTemplate(type) {
+            const templates = {
+                simple: {
+                    content: `Portfolio review for {{clientName}} covering {{timePeriod}}.
+
+Asset Allocation:
+- US Stock: {{usStockPercentage}}%
+- Non US Stock: {{nonUsStockPercentage}}%
+- Cash: {{cashPercentage}}%
+- Bond: {{bondPercentage}}%
+- Other: {{otherPercentage}}%
+
+Performance Summary:
+- Trailing Year Return: {{trailingYearReturn}}%
+- YTD Return: {{ytdReturn}}%`
+                },
+                detailed: {
+                    content: `COMPREHENSIVE PORTFOLIO REVIEW
+Client: {{clientName}}
+Period: {{timePeriod}}
+
+ASSET ALLOCATION BREAKDOWN:
+• US Equities: {{usStockPercentage}}% of portfolio
+• International Equities: {{nonUsStockPercentage}}% of portfolio  
+• Fixed Income: {{bondPercentage}}% of portfolio
+• Cash & Equivalents: {{cashPercentage}}% of portfolio
+• Alternative Investments: {{otherPercentage}}% of portfolio
+
+PERFORMANCE ANALYSIS:
+Trailing Year Performance:
+• Portfolio Return: {{trailingYearReturn}}%
+• Benchmark Return: {{trailingYearBenchmark}}%
+
+Year-to-Date Performance:
+• Portfolio Return: {{ytdReturn}}%
+• Benchmark Return: {{ytdBenchmark}}%`
+                },
+                performance: {
+                    content: `PERFORMANCE SUMMARY - {{clientName}}
+Reporting Period: {{timePeriod}}
+
+KEY METRICS:
+Trailing Year:
+• Portfolio: {{trailingYearReturn}}%
+• Benchmark: {{trailingYearBenchmark}}%
+
+YTD:
+• Portfolio: {{ytdReturn}}%
+• Benchmark: {{ytdBenchmark}}%
+
+ASSET MIX:
+Equity: {{usStockPercentage}}% US + {{nonUsStockPercentage}}% International
+Fixed Income: {{bondPercentage}}%
+Cash: {{cashPercentage}}%
+Other: {{otherPercentage}}%`
+                }
+            };
+
+            const template = templates[type];
+            document.getElementById('templateContent').value = template.content;
+            updatePreview();
+        }
+
+        function resetToDefault() {
+            if (confirm('Reset to default template?')) {
+                const defaultTemplate = `Portfolio review for {{clientName}} covering the period {{timePeriod}}.
+
+Asset Allocation:
+- US Stock: {{usStockPercentage}}%
+- Non US Stock: {{nonUsStockPercentage}}%
+- Cash: {{cashPercentage}}%
+- Bond: {{bondPercentage}}%
+- Other: {{otherPercentage}}%
+
+Performance Summary (Trailing Year):
+- Time Weighted Return: {{trailingYearReturn}}%
+- Benchmark Return: {{trailingYearBenchmark}}%
+
+Performance Summary (YTD):
+- Time Weighted Return: {{ytdReturn}}%
+- Benchmark Return: {{ytdBenchmark}}%`;
+                
+                document.getElementById('templateContent').value = defaultTemplate;
+                updatePreview();
+            }
+        }
+
+        function updatePreview() {
+            const template = document.getElementById('templateContent').value;
+            const sampleData = {
+                '{{clientName}}': 'John Smith',
+                '{{timePeriod}}': '1/1/2023 to 12/31/2023',
+                '{{usStockPercentage}}': '45.2',
+                '{{nonUsStockPercentage}}': '25.8',
+                '{{cashPercentage}}': '12.0',
+                '{{bondPercentage}}': '15.0',
+                '{{otherPercentage}}': '2.0',
+                '{{trailingYearReturn}}': '8.5',
+                '{{trailingYearBenchmark}}': '7.2',
+                '{{ytdReturn}}': '6.8',
+                '{{ytdBenchmark}}': '5.9'
+            };
+            
+            let preview = template;
+            for (const [variable, value] of Object.entries(sampleData)) {
+                preview = preview.replace(new RegExp(variable, 'g'), value);
+            }
+            
+            document.getElementById('previewContent').textContent = preview;
+        }
+
+        // Update preview when template changes
+        document.getElementById('templateContent').addEventListener('input', updatePreview);
+
+        // Initial preview
+        updatePreview();
+
+        document.getElementById('templateForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            
+            fetch('/api/template', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('Template saved successfully!');
+                } else {
+                    alert('Error saving template: ' + result.error);
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

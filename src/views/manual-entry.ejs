@@ -29,6 +29,9 @@
             border: none;
         }
         .form-section { margin-bottom: 2rem; }
+        .header-actions {
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -37,6 +40,11 @@
             <iframe src="/previews/<%= pdfFilename %>" title="PDF Preview"></iframe>
         </div>
         <div class="form-pane">
+            <div class="header-actions">
+                <a href="/upload" class="btn btn-sm btn-outline-secondary">← Back to Upload</a>
+                <a href="/templates" class="btn btn-sm btn-outline-primary">Edit Template</a>
+            </div>
+            
             <% if (typeof parsedData === 'undefined') { %>
                 <!-- STAGE 1: Paste Data -->
                 <h3>Step 1: Paste Data</h3>

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { parseAssets, generateFinalNote, parseTimePeriod, parsePerformanceByPosition } = require('../utils/noteGenerator');
+const { parseAssets, generateFinalNote, parseTimePeriod, parsePerformanceByPosition, loadTemplate, saveTemplate, getAvailableVariables } = require('../utils/noteGenerator');
 
 // This new route handles the "Parse and Verify" step.
 router.post('/parse-data', (req, res) => {
@@ -41,6 +41,39 @@ router.post('/generate-note', (req, res) => {
     const finalData = req.body; 
     const noteContent = generateFinalNote(finalData);
     res.render('results', { noteContent });
+});
+
+// Template editor routes
+router.get('/templates', (req, res) => {
+    const currentTemplate = loadTemplate();
+    const availableVariables = getAvailableVariables();
+    
+    res.render('templates', {
+        currentTemplate,
+        availableVariables
+    });
+});
+
+// API route to save template
+router.post('/api/template', (req, res) => {
+    try {
+        const { templateContent } = req.body;
+        
+        if (!templateContent || templateContent.trim() === '') {
+            return res.json({ success: false, error: 'Template content cannot be empty' });
+        }
+        
+        const success = saveTemplate(templateContent);
+        
+        if (success) {
+            res.json({ success: true });
+        } else {
+            res.json({ success: false, error: 'Failed to save template' });
+        }
+    } catch (error) {
+        console.error('Error saving template:', error);
+        res.json({ success: false, error: 'Internal server error' });
+    }
 });
 
 module.exports = router; 
