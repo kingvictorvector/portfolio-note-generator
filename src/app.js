@@ -1,5 +1,7 @@
 const express = require('express');
 const path = require('path');
+const https = require('https');
+const fs = require('fs');
 require('dotenv').config();
 const { connectDB } = require('./config/database');
 const uploadRouter = require('./routes/upload');
@@ -47,6 +49,27 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3002;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-}); 
+
+// Check if HTTPS certificates exist
+const certPath = process.env.CERT_PATH || 'C:\\certs\\server.pfx';
+const certPassword = process.env.CERT_PASSWORD || 'YourPassword123!';
+
+if (fs.existsSync(certPath)) {
+    // HTTPS server
+    const httpsOptions = {
+        pfx: fs.readFileSync(certPath),
+        passphrase: certPassword
+    };
+    
+    https.createServer(httpsOptions, app).listen(PORT, () => {
+        console.log(`HTTPS Server is running on port ${PORT}`);
+        console.log(`Access at: https://kfg_server:${PORT}`);
+    });
+} else {
+    // HTTP server (fallback)
+    app.listen(PORT, () => {
+        console.log(`HTTP Server is running on port ${PORT}`);
+        console.log(`Access at: http://kfg_server:${PORT}`);
+        console.log('Note: HTTPS certificates not found. Install certificates for secure access.');
+    });
+} 

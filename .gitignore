@@ -88,6 +88,13 @@ previews/
 *.png
 *.traineddata
 
+# SSL/TLS certificates
+*.pem
+*.crt
+*.pfx
+*.key
+certs/
+
 # IDE files
 .vscode/
 .idea/
