@@ -126,4 +126,28 @@ router.get('/api/quick-template/:key', (req, res) => {
     }
 });
 
+// API route to delete quick template
+router.delete('/api/quick-template/:key', (req, res) => {
+    try {
+        const { key } = req.params;
+        const quickTemplates = loadQuickTemplates();
+        
+        if (!quickTemplates[key]) {
+            return res.json({ success: false, error: 'Template not found' });
+        }
+        
+        delete quickTemplates[key];
+        const success = saveQuickTemplates(quickTemplates);
+        
+        if (success) {
+            res.json({ success: true });
+        } else {
+            res.json({ success: false, error: 'Failed to delete template' });
+        }
+    } catch (error) {
+        console.error('Error deleting quick template:', error);
+        res.json({ success: false, error: 'Internal server error' });
+    }
+});
+
 module.exports = router; 

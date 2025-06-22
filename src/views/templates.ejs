@@ -98,15 +98,27 @@
                     </div>
                     <div class="card-body">
                         <% for (const [key, template] of Object.entries(quickTemplates)) { %>
-                            <button class="btn btn-outline-primary btn-sm mb-2" onclick="loadQuickTemplate('<%= key %>')"><%= template.name %></button>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <button class="btn btn-outline-primary btn-sm" onclick="loadQuickTemplate('<%= key %>', '<%= template.name %>')"><%= template.name %></button>
+                                <div>
+                                    <button class="btn btn-outline-warning btn-sm" onclick="editQuickTemplate('<%= key %>', '<%= template.name %>')" title="Edit">
+                                        <small>✏️</small>
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm" onclick="deleteQuickTemplate('<%= key %>', '<%= template.name %>')" title="Delete">
+                                        <small>🗑️</small>
+                                    </button>
+                                </div>
+                            </div>
                         <% } %>
                         
                         <hr>
                         <h6>Save Current Template</h6>
                         <div class="input-group mb-2">
                             <input type="text" class="form-control form-control-sm" id="saveTemplateName" placeholder="Template name">
+                            <input type="hidden" id="currentTemplateKey" value="">
                             <button class="btn btn-outline-success btn-sm" onclick="saveAsQuickTemplate()">Save as Quick Template</button>
                         </div>
+                        <small class="text-muted">Leave template name empty to create a new template, or enter an existing name to overwrite it.</small>
                     </div>
                 </div>
             </div>
@@ -128,17 +140,41 @@
             updatePreview();
         }
 
-        function loadQuickTemplate(key) {
+        function loadQuickTemplate(key, name) {
             fetch(`/api/quick-template/${key}`)
                 .then(response => response.json())
                 .then(result => {
                     if (result.success) {
                         document.getElementById('templateContent').value = result.template.content;
+                        document.getElementById('currentTemplateKey').value = key;
+                        document.getElementById('saveTemplateName').value = name;
                         updatePreview();
                     } else {
                         alert('Error loading template: ' + result.error);
                     }
                 });
+        }
+
+        function editQuickTemplate(key, name) {
+            // Same as loadQuickTemplate but explicitly for editing
+            loadQuickTemplate(key, name);
+        }
+
+        function deleteQuickTemplate(key, name) {
+            if (confirm(`Are you sure you want to delete the template "${name}"?`)) {
+                fetch(`/api/quick-template/${key}`, { 
+                    method: 'DELETE' 
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        alert('Template deleted successfully!');
+                        location.reload();
+                    } else {
+                        alert('Error deleting template: ' + result.error);
+                    }
+                });
+            }
         }
 
         function saveAsQuickTemplate() {
@@ -155,6 +191,8 @@
                 return;
             }
             
+            const currentTemplateKey = document.getElementById('currentTemplateKey').value;
+            
             fetch('/api/quick-template', {
                 method: 'POST',
                 headers: {
@@ -162,7 +200,8 @@
                 },
                 body: JSON.stringify({
                     templateName: templateName,
-                    templateContent: templateContent
+                    templateContent: templateContent,
+                    templateKey: currentTemplateKey || undefined
                 })
             })
             .then(response => response.json())
@@ -170,6 +209,7 @@
                 if (result.success) {
                     alert('Template saved successfully!');
                     document.getElementById('saveTemplateName').value = '';
+                    document.getElementById('currentTemplateKey').value = '';
                     location.reload(); // Reload to show the new template
                 } else {
                     alert('Error saving template: ' + result.error);
