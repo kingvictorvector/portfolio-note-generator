@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manual Data Entry</title>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+        }
+        .container-fluid {
+            display: flex;
+            height: 100vh;
+        }
+        .preview-pane {
+            flex: 2;
+            border-right: 1px solid #dee2e6;
+        }
+        .form-pane {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .form-section { margin-bottom: 2rem; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="preview-pane">
+            <iframe src="/previews/<%= pdfFilename %>" title="PDF Preview"></iframe>
+        </div>
+        <div class="form-pane">
+            <% if (typeof parsedData === 'undefined') { %>
+                <!-- STAGE 1: Paste Data -->
+                <h3>Step 1: Paste Data</h3>
+                <p>Copy each table from the PDF into the appropriate box.</p>
+                <form action="/parse-data" method="POST">
+                    <input type="hidden" name="pdfFilename" value="<%= pdfFilename %>">
+                    <div class="mb-3">
+                        <label for="clientName" class="form-label">Client Name</label>
+                        <input type="text" class="form-control" id="clientName" name="clientName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="trailingYearData" class="form-label">Portfolio Performance Trailing Year</label>
+                        <textarea class="form-control" id="trailingYearData" name="trailingYearData" rows="8"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="ytdData" class="form-label">Portfolio Performance YTD</label>
+                        <textarea class="form-control" id="ytdData" name="ytdData" rows="5"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="assetAllocationData" class="form-label">Portfolio Asset Allocation</label>
+                        <textarea class="form-control" id="assetAllocationData" name="assetAllocationData" rows="7"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Parse and Verify</button>
+                </form>
+            <% } else { %>
+                <!-- STAGE 2: Verify Data -->
+                <h3>Step 2: Verify Data</h3>
+                <p>Check the parsed data and correct if necessary.</p>
+                <form action="/generate-note" method="POST">
+                    <div class="form-section">
+                        <h5>General</h5>
+                        <label class="form-label">Client Name</label>
+                        <input type="text" class="form-control" name="clientName" value="<%= parsedData.clientName %>">
+                    </div>
+
+                    <div class="form-section">
+                        <h5>Trailing Year</h5>
+                        <% for(const key in parsedData.trailingYear) { %>
+                            <label class="form-label"><%= key %></label>
+                            <input type="text" class="form-control mb-2" name="trailingYear[<%= key %>]" value="<%= parsedData.trailingYear[key] %>">
+                        <% } %>
+                    </div>
+
+                    <div class="form-section">
+                        <h5>YTD</h5>
+                        <% for(const key in parsedData.ytd) { %>
+                             <label class="form-label"><%= key %></label>
+                            <input type="text" class="form-control mb-2" name="ytd[<%= key %>]" value="<%= parsedData.ytd[key] %>">
+                        <% } %>
+                    </div>
+
+                    <div class="form-section">
+                        <h5>Asset Allocation (%)</h5>
+                         <% for(const key in parsedData.assetAllocation) { %>
+                             <label class="form-label"><%= key %></label>
+                            <input type="text" class="form-control mb-2" name="assetAllocation[<%= key %>]" value="<%= parsedData.assetAllocation[key] %>">
+                        <% } %>
+                    </div>
+
+                    <button type="submit" class="btn btn-success">Generate Final Note</button>
+                </form>
+            <% } %>
+        </div>
+    </div>
+</body>
+</html> 

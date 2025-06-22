@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Generated Note</title>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <style>
+        .note-container {
+            border: 1px solid #dee2e6;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            white-space: pre-wrap; /* This preserves line breaks */
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Generated Note</h2>
+        <p>You can copy the text below.</p>
+        <div class="note-container" id="note-text">
+            <%= noteContent %>
+        </div>
+        <button class="btn btn-primary mt-3" id="copy-btn">Copy to Clipboard</button>
+        <a href="/upload" class="btn btn-secondary mt-3">Process Another PDF</a>
+    </div>
+
+    <script>
+        document.getElementById('copy-btn').addEventListener('click', () => {
+            const noteText = document.getElementById('note-text').innerText;
+            navigator.clipboard.writeText(noteText).then(() => {
+                alert('Note copied to clipboard!');
+            }, (err) => {
+                alert('Failed to copy note: ', err);
+            });
+        });
+    </script>
+</body>
+</html> 

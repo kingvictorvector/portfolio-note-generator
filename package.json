@@ -1,0 +1,29 @@
+{
+  "name": "portfolio-note-generator",
+  "version": "1.0.0",
+  "description": "```sh\r mkdir portfolio-note-generator\r cd portfolio-note-generator\r ```\r \"C:\\Users\\jcjan\\.cursor\\Kingvv\\portfolio-note-generator\"\r ---",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon src/app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bootstrap": "^5.3.6",
+    "dotenv": "^16.5.0",
+    "ejs": "^3.1.10",
+    "express": "^5.1.0",
+    "jquery": "^3.7.1",
+    "mssql": "^11.0.1",
+    "multer": "^2.0.1",
+    "pdf-image": "^2.0.0",
+    "pdf-parse": "^1.1.1",
+    "pdf-poppler": "^0.2.1",
+    "tesseract.js": "^6.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
