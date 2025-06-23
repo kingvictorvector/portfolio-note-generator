@@ -144,9 +144,10 @@ function processTemplate(templateText, data) {
     const totalFixedIncome = (cash + bond).toFixed(1);
     
     // Calculate total bond + cash dollar amount using the actual portfolio value
-    const totalPortfolioValue = parseFloat(data.totalPortfolioValue) || 1000000; // Use provided value or default $1M
+    const totalPortfolioValue = parseFloat((data.totalPortfolioValue || '').toString().replace(/,/g, '')) || 1000000; // Remove commas before parsing
     const totalBondCashPercent = cash + bond;
     const totalBondCashDollars = Math.round((totalBondCashPercent / 100) * totalPortfolioValue / 1000) * 1000;
+    console.log(`[DEBUG] Bond: ${bond}, Cash: ${cash}, Total %: ${totalBondCashPercent}, Portfolio: ${totalPortfolioValue}, $: ${totalBondCashDollars}`);
     
     // Replace variables with actual data
     const replacements = {

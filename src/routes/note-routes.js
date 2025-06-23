@@ -10,6 +10,10 @@ router.post('/parse-data', (req, res) => {
     const trailingYearPerf = parsePerformanceByPosition(trailingYearData);
     const ytdPerf = parsePerformanceByPosition(ytdData);
 
+    // Debug logs for troubleshooting
+    console.log('[DEBUG] trailingYearPerf:', trailingYearPerf);
+    console.log('[DEBUG] totalPortfolioValue (input):', totalPortfolioValue);
+    
     const trailingYear = {
         'Time Period': parseTimePeriod(trailingYearData),
         'Time Weighted Return %': trailingYearPerf['Time Weighted Return %'],
@@ -25,6 +29,7 @@ router.post('/parse-data', (req, res) => {
 
     // Extract total portfolio value from the trailing year data (last number in the table)
     const extractedPortfolioValue = trailingYearPerf['Total Portfolio Value'] || totalPortfolioValue;
+    console.log('[DEBUG] extractedPortfolioValue:', extractedPortfolioValue);
 
     // Re-render the manual entry page, now with the parsed data for verification.
     res.render('manual-entry', {
