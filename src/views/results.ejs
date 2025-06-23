@@ -19,21 +19,18 @@
     <div class="container mt-5">
         <h2>Generated Note</h2>
         <p>You can copy the text below.</p>
-        <div class="note-container" id="note-text">
-            <%= noteContent %>
-        </div>
+        <pre class="note-container" id="note-text"><%= noteContent %></pre>
+        <textarea id="copyArea" style="position:absolute;left:-9999px;top:0;"><%= noteContent.replace(/</g, '&lt;').replace(/>/g, '&gt;') %></textarea>
         <button class="btn btn-primary mt-3" id="copy-btn">Copy to Clipboard</button>
         <a href="/upload" class="btn btn-secondary mt-3">Process Another PDF</a>
     </div>
 
     <script>
         document.getElementById('copy-btn').addEventListener('click', () => {
-            const noteText = document.getElementById('note-text').innerText;
-            navigator.clipboard.writeText(noteText).then(() => {
-                alert('Note copied to clipboard!');
-            }, (err) => {
-                alert('Failed to copy note: ', err);
-            });
+            const ta = document.getElementById('copyArea');
+            ta.select();
+            document.execCommand('copy');
+            alert('Note copied to clipboard!');
         });
     </script>
 </body>
