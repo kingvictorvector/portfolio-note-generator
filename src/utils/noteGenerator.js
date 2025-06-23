@@ -26,6 +26,7 @@ function parsePerformanceByPosition(text) {
     return {
         'Time Weighted Return %': numbers[numbers.length - 3],
         'Benchmark Return %': numbers[numbers.length - 2],
+        'Total Portfolio Value': numbers[numbers.length - 1]
     };
 }
 
@@ -115,7 +116,8 @@ function getAvailableVariables() {
             'bondPercentage': 'Bond %',
             'otherPercentage': 'Other %',
             'totalEquityPercentage': 'Total Equity % (US + Non-US Stock)',
-            'totalFixedIncomePercentage': 'Total Fixed Income % (Cash + Bond)'
+            'totalFixedIncomePercentage': 'Total Fixed Income % (Cash + Bond)',
+            'totalBondCashDollars': 'Total Bond + Cash ($, rounded to nearest $1000)'
         },
         'Trailing Year Performance': {
             'trailingYearReturn': 'Time Weighted Return %',
@@ -141,6 +143,11 @@ function processTemplate(templateText, data) {
     const totalEquity = (usStock + nonUsStock).toFixed(1);
     const totalFixedIncome = (cash + bond).toFixed(1);
     
+    // Calculate total bond + cash dollar amount using the actual portfolio value
+    const totalPortfolioValue = parseFloat(data.totalPortfolioValue) || 1000000; // Use provided value or default $1M
+    const totalBondCashPercent = cash + bond;
+    const totalBondCashDollars = Math.round((totalBondCashPercent / 100) * totalPortfolioValue / 1000) * 1000;
+    
     // Replace variables with actual data
     const replacements = {
         '{{clientName}}': data.clientName || '',
@@ -152,6 +159,7 @@ function processTemplate(templateText, data) {
         '{{otherPercentage}}': data.assetAllocation['Other'] || '',
         '{{totalEquityPercentage}}': totalEquity,
         '{{totalFixedIncomePercentage}}': totalFixedIncome,
+        '{{totalBondCashDollars}}': totalBondCashDollars.toLocaleString(),
         '{{trailingYearReturn}}': data.trailingYear['Time Weighted Return %'] || '',
         '{{trailingYearBenchmark}}': data.trailingYear['Benchmark Return %'] || '',
         '{{ytdReturn}}': data.ytd['Time Weighted Return %'] || '',
@@ -166,7 +174,16 @@ function processTemplate(templateText, data) {
 }
 
 // Generates the final note from the structured, verified data.
-function generateFinalNote(data) {
+function generateFinalNote(data, templateId = null) {
+    // If a specific template is requested, use it
+    if (templateId) {
+        const quickTemplates = loadQuickTemplates();
+        const template = quickTemplates[templateId];
+        if (template) {
+            return processTemplate(template.content, data);
+        }
+    }
+    
     // Load the current template
     const template = loadTemplate();
     

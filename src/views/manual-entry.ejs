@@ -56,6 +56,11 @@
                         <input type="text" class="form-control" id="clientName" name="clientName" required>
                     </div>
                     <div class="mb-3">
+                        <label for="totalPortfolioValue" class="form-label">Total Portfolio Value ($)</label>
+                        <input type="number" class="form-control" id="totalPortfolioValue" name="totalPortfolioValue" placeholder="1000000">
+                        <div class="form-text">Optional - will be extracted from the trailing year performance table if not provided</div>
+                    </div>
+                    <div class="mb-3">
                         <label for="trailingYearData" class="form-label">Portfolio Performance Trailing Year</label>
                         <textarea class="form-control" id="trailingYearData" name="trailingYearData" rows="8"></textarea>
                     </div>
@@ -78,6 +83,9 @@
                         <h5>General</h5>
                         <label class="form-label">Client Name</label>
                         <input type="text" class="form-control" name="clientName" value="<%= parsedData.clientName %>">
+                        
+                        <label class="form-label">Total Portfolio Value ($)</label>
+                        <input type="number" class="form-control mb-2" name="totalPortfolioValue" value="<%= parsedData.totalPortfolioValue %>">
                     </div>
 
                     <div class="form-section">
@@ -104,10 +112,60 @@
                         <% } %>
                     </div>
 
-                    <button type="submit" class="btn btn-success">Generate Final Note</button>
+                    <div class="form-section">
+                        <h5>Note Template</h5>
+                        <label class="form-label">Select Template</label>
+                        <select class="form-control mb-2" name="templateId">
+                            <option value="">Use Default Template</option>
+                            <% for (const [key, template] of Object.entries(quickTemplates || {})) { %>
+                                <option value="<%= key %>"><%= template.name %></option>
+                            <% } %>
+                        </select>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary" onclick="goBackToStep1()">← Back to Step 1</button>
+                        <button type="submit" class="btn btn-success">Generate Final Note</button>
+                    </div>
                 </form>
             <% } %>
         </div>
     </div>
+
+    <script>
+        function goBackToStep1() {
+            // Store current form data in sessionStorage
+            const form = document.querySelector('form');
+            const formData = new FormData(form);
+            
+            // Store the data
+            sessionStorage.setItem('clientName', formData.get('clientName'));
+            sessionStorage.setItem('totalPortfolioValue', formData.get('totalPortfolioValue'));
+            sessionStorage.setItem('trailingYearData', formData.get('trailingYearData'));
+            sessionStorage.setItem('ytdData', formData.get('ytdData'));
+            sessionStorage.setItem('assetAllocationData', formData.get('assetAllocationData'));
+            
+            // Go back to Step 1
+            window.location.href = '/manual-entry/<%= pdfFilename %>';
+        }
+
+        // Restore data if coming back from Step 2
+        window.addEventListener('load', function() {
+            if (typeof parsedData === 'undefined') {
+                // We're on Step 1, restore data if available
+                const clientName = sessionStorage.getItem('clientName');
+                const totalPortfolioValue = sessionStorage.getItem('totalPortfolioValue');
+                const trailingYearData = sessionStorage.getItem('trailingYearData');
+                const ytdData = sessionStorage.getItem('ytdData');
+                const assetAllocationData = sessionStorage.getItem('assetAllocationData');
+                
+                if (clientName) document.getElementById('clientName').value = clientName;
+                if (totalPortfolioValue) document.getElementById('totalPortfolioValue').value = totalPortfolioValue;
+                if (trailingYearData) document.getElementById('trailingYearData').value = trailingYearData;
+                if (ytdData) document.getElementById('ytdData').value = ytdData;
+                if (assetAllocationData) document.getElementById('assetAllocationData').value = assetAllocationData;
+            }
+        });
+    </script>
 </body>
 </html> 

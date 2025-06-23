@@ -4,7 +4,7 @@ const { parseAssets, generateFinalNote, parseTimePeriod, parsePerformanceByPosit
 
 // This new route handles the "Parse and Verify" step.
 router.post('/parse-data', (req, res) => {
-    const { clientName, trailingYearData, ytdData, assetAllocationData, pdfFilename } = req.body;
+    const { clientName, totalPortfolioValue, trailingYearData, ytdData, assetAllocationData, pdfFilename } = req.body;
 
     // Use the new, position-based parser for the performance tables.
     const trailingYearPerf = parsePerformanceByPosition(trailingYearData);
@@ -23,15 +23,20 @@ router.post('/parse-data', (req, res) => {
     
     const assetAllocation = parseAssets(assetAllocationData);
 
+    // Extract total portfolio value from the trailing year data (last number in the table)
+    const extractedPortfolioValue = trailingYearPerf['Total Portfolio Value'] || totalPortfolioValue;
+
     // Re-render the manual entry page, now with the parsed data for verification.
     res.render('manual-entry', {
         pdfFilename,
         parsedData: {
             clientName,
+            totalPortfolioValue: extractedPortfolioValue,
             trailingYear,
             ytd,
             assetAllocation
-        }
+        },
+        quickTemplates: loadQuickTemplates()
     });
 });
 
@@ -39,7 +44,8 @@ router.post('/parse-data', (req, res) => {
 // This route now receives the final, verified data.
 router.post('/generate-note', (req, res) => {
     const finalData = req.body; 
-    const noteContent = generateFinalNote(finalData);
+    const templateId = finalData.templateId || null;
+    const noteContent = generateFinalNote(finalData, templateId);
     res.render('results', { noteContent });
 });
 
@@ -54,6 +60,12 @@ router.get('/templates', (req, res) => {
         availableVariables,
         quickTemplates
     });
+});
+
+// Route to go back to Step 1 with the same PDF
+router.get('/manual-entry/:pdfFilename', (req, res) => {
+    const { pdfFilename } = req.params;
+    res.render('manual-entry', { pdfFilename });
 });
 
 // API route to save template
