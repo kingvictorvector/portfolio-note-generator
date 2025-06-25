@@ -1,7 +1,7 @@
 # Update script for Portfolio Note Generator service
 $ErrorActionPreference = "Stop"
 
-Write-Host "Starting Portfolio Note Generator service update..."
+Write-Host "Updating portfolio-note-generator..." -ForegroundColor Green
 
 # Define paths
 $serverPath = "C:\PortfolioNoteGenerator"
@@ -12,10 +12,33 @@ if (-not (Test-Path .git)) {
     exit 1
 }
 
-# Pull latest changes
-Write-Host "Pulling latest changes from Git..."
-git fetch
-git reset --hard origin/main
+# Ensure PM2 is installed globally
+npm list -g pm2 > $null 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "PM2 not found, installing globally..." -ForegroundColor Yellow
+    npm install -g pm2
+}
+
+# Stop the app in PM2 if running
+pm2 stop note-generator
+pm2 delete note-generator
+
+# Pull latest code
+git pull
+
+# Install dependencies
+npm install
+
+# Start (or restart) the app with PM2
+pm2 start src/app.js --name note-generator --env production
+
+# Save the PM2 process list
+pm2 save
+
+# Set up PM2 to auto-start on boot (only needs to be run once, but is safe to include)
+pm2 startup | Out-String | Invoke-Expression
+
+Write-Host "Update complete. App is running under PM2 and will auto-restart on reboot." -ForegroundColor Green
 
 # Stop the service if it's running
 $service = Get-Service -Name "PortfolioNoteGeneratorService" -ErrorAction SilentlyContinue
