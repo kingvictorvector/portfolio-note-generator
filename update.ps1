@@ -86,15 +86,28 @@ if ($pm2Installed) {
     # Save the PM2 process list
     pm2 save
     
-    # Set up PM2 to auto-start on boot (only needs to be run once, but is safe to include)
+    # Set up PM2 to auto-start on boot (Windows-specific handling)
+    Write-Host "Configuring PM2 startup..." -ForegroundColor Yellow
     try {
-        pm2 startup | Out-String | Invoke-Expression
-        Write-Host "PM2 startup configured!" -ForegroundColor Green
+        $startupOutput = pm2 startup 2>&1
+        if ($startupOutput -and $startupOutput.Trim() -ne "") {
+            Write-Host "PM2 startup command output:" -ForegroundColor Cyan
+            Write-Host $startupOutput -ForegroundColor White
+            
+            # Check if the output contains a command to run
+            if ($startupOutput -match "Run this command to set up startup script") {
+                Write-Host "`nIMPORTANT: You need to run the command above as Administrator to enable auto-start!" -ForegroundColor Yellow
+            }
+        } else {
+            Write-Host "PM2 startup configured successfully!" -ForegroundColor Green
+        }
     } catch {
         Write-Host "Note: PM2 startup configuration may need to be run manually" -ForegroundColor Yellow
+        Write-Host "Try running: pm2 startup (as Administrator)" -ForegroundColor Yellow
     }
     
-    Write-Host "`nUpdate complete! App is running under PM2 and will auto-restart on reboot." -ForegroundColor Green
+    Write-Host "`nUpdate complete! App is running under PM2." -ForegroundColor Green
+    Write-Host "To enable auto-start on boot, run 'pm2 startup' as Administrator" -ForegroundColor Cyan
 } else {
     Write-Host "Starting app without PM2 (manual mode)..." -ForegroundColor Yellow
     Start-Process "node" "src/app.js" -WorkingDirectory (Get-Location)
