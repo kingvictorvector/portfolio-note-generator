@@ -1,44 +1,107 @@
-# Update script for Portfolio Note Generator service
+# Update script for portfolio-note-generator with PM2
 $ErrorActionPreference = "Stop"
 
-Write-Host "Updating portfolio-note-generator..." -ForegroundColor Green
+Write-Host "Starting portfolio-note-generator update..." -ForegroundColor Green
 
-# Define paths
-$serverPath = "C:\PortfolioNoteGenerator"
-
-# Verify we're in a Git repository
-if (-not (Test-Path .git)) {
-    Write-Host "Error: Not in a Git repository!" -ForegroundColor Red
+# Check if Node.js and npm are available
+try {
+    $nodeVersion = node --version 2>$null
+    $npmVersion = npm --version 2>$null
+    Write-Host "Node.js version: $nodeVersion" -ForegroundColor Cyan
+    Write-Host "npm version: $npmVersion" -ForegroundColor Cyan
+} catch {
+    Write-Host "Error: Node.js or npm not found in PATH!" -ForegroundColor Red
+    Write-Host "Please ensure Node.js is properly installed and in your PATH." -ForegroundColor Red
     exit 1
 }
 
-# Ensure PM2 is installed globally
-npm list -g pm2 > $null 2>&1
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "PM2 not found, installing globally..." -ForegroundColor Yellow
-    npm install -g pm2
+# Try to install PM2 globally, but don't fail if it doesn't work
+Write-Host "Checking for PM2 installation..." -ForegroundColor Yellow
+$pm2Installed = $false
+
+try {
+    $pm2Check = pm2 --version 2>$null
+    if ($pm2Check) {
+        Write-Host "PM2 is already installed: $pm2Check" -ForegroundColor Green
+        $pm2Installed = $true
+    }
+} catch {
+    Write-Host "PM2 not found, attempting to install..." -ForegroundColor Yellow
 }
 
-# Stop the app in PM2 if running
-pm2 stop note-generator
-pm2 delete note-generator
+if (-not $pm2Installed) {
+    try {
+        Write-Host "Installing PM2 globally..." -ForegroundColor Yellow
+        npm install -g pm2
+        $pm2Installed = $true
+        Write-Host "PM2 installed successfully!" -ForegroundColor Green
+    } catch {
+        Write-Host "Warning: Failed to install PM2 globally. Continuing without PM2..." -ForegroundColor Yellow
+        Write-Host "You may need to run: npm install -g pm2 (as administrator)" -ForegroundColor Yellow
+    }
+}
+
+# Stop the app in PM2 if running and PM2 is available
+if ($pm2Installed) {
+    try {
+        pm2 stop note-generator 2>$null
+        pm2 delete note-generator 2>$null
+        Write-Host "Stopped existing PM2 process" -ForegroundColor Yellow
+    } catch {
+        Write-Host "No existing PM2 process to stop" -ForegroundColor Yellow
+    }
+} else {
+    # Fallback: stop any existing Node.js processes on port 3002
+    Write-Host "Stopping any existing Node.js processes on port 3002..." -ForegroundColor Yellow
+    $port3002Processes = netstat -ano | findstr ":3002" | findstr "LISTENING"
+    if ($port3002Processes) {
+        $port3002Processes | ForEach-Object {
+            $parts = $_ -split '\s+'
+            $pid = $parts[-1]
+            if ($pid -and $pid -ne "0") {
+                $process = Get-Process -Id $pid -ErrorAction SilentlyContinue
+                if ($process -and $process.ProcessName -eq "node") {
+                    Write-Host "Stopping Node.js process on port 3002 (PID: $pid)..." -ForegroundColor Yellow
+                    Stop-Process -Id $pid -Force
+                    Start-Sleep -Seconds 1
+                }
+            }
+        }
+    }
+}
 
 # Pull latest code
+Write-Host "Pulling latest changes from Git..." -ForegroundColor Yellow
 git pull
 
 # Install dependencies
+Write-Host "Installing dependencies..." -ForegroundColor Yellow
 npm install
 
-# Start (or restart) the app with PM2
-pm2 start src/app.js --name note-generator --env production
+# Start the app
+if ($pm2Installed) {
+    Write-Host "Starting app with PM2..." -ForegroundColor Yellow
+    pm2 start src/app.js --name note-generator --env production
+    
+    # Save the PM2 process list
+    pm2 save
+    
+    # Set up PM2 to auto-start on boot (only needs to be run once, but is safe to include)
+    try {
+        pm2 startup | Out-String | Invoke-Expression
+        Write-Host "PM2 startup configured!" -ForegroundColor Green
+    } catch {
+        Write-Host "Note: PM2 startup configuration may need to be run manually" -ForegroundColor Yellow
+    }
+    
+    Write-Host "`nUpdate complete! App is running under PM2 and will auto-restart on reboot." -ForegroundColor Green
+} else {
+    Write-Host "Starting app without PM2 (manual mode)..." -ForegroundColor Yellow
+    Start-Process "node" "src/app.js" -WorkingDirectory (Get-Location)
+    Write-Host "`nUpdate complete! App started manually. Consider installing PM2 for auto-restart." -ForegroundColor Green
+}
 
-# Save the PM2 process list
-pm2 save
-
-# Set up PM2 to auto-start on boot (only needs to be run once, but is safe to include)
-pm2 startup | Out-String | Invoke-Expression
-
-Write-Host "Update complete. App is running under PM2 and will auto-restart on reboot." -ForegroundColor Green
+Write-Host "You can access the app at: http://kfg_server:3002" -ForegroundColor Cyan
 
 # Stop the service if it's running
 $service = Get-Service -Name "PortfolioNoteGeneratorService" -ErrorAction SilentlyContinue
